@@ -11,7 +11,7 @@ from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sqlalchemy import create_engine
-import time
+from sqlalchemy import inspect
 
 
 app = Flask(__name__)
@@ -126,7 +126,14 @@ def clustering():
     engine = create_engine(
         "mysql+mysqlconnector://root:12344321@localhost/db_daftarskripsi", echo=False
     )
-    df_2.to_sql(name="daftar_cluster", con=engine, if_exists="replace", index=False)
+    inspector = inspect(engine)
+
+    if not inspector.has_table("daftar_cluster"):
+        # Table doesn't exist, create it
+        df_2.to_sql(name="daftar_cluster", con=engine, if_exists="replace", index=False)
+    else:
+        # Table exists, append the data
+        df_2.to_sql(name="daftar_cluster", con=engine, if_exists="append", index=False)
 
     return redirect(url_for("index"))
 
