@@ -16,11 +16,17 @@ This project is a Python application that performs clustering on a dataset.
    ```sh
    pip install -r requirements.txt
    ```
-2. Run the application:
+2. Import mysql database:
+   ```sh
+   mysql -u root -p < db_daftarskripsi.sql
+   ```
+3. Change the database credentials in `app.py`:
+
+4. Run the application:
    ```sh
    python app.py
    ```
-3. Open the application in a browser at `http://localhost:5000/`.
+5. Open the application in a browser at `http://localhost:5000/`.
 
 ## Features
 
