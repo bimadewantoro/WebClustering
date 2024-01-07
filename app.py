@@ -12,13 +12,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
+from sqlalchemy import text
 
 
 app = Flask(__name__)
 
 # Koneksi ke database MySQL
 mydb = mysql.connector.connect(
-    host="localhost", user="root", password="12344321", database="db_daftarskripsi"
+    host="localhost", user="root", password="", database="db_daftarskripsi"
 )
 
 
@@ -80,6 +81,8 @@ def clustering():
     cursor.execute("SELECT stopwords FROM stopwords")
     data_stopwords = cursor.fetchall()
     df_stopwords = pd.DataFrame(data_stopwords, columns=["stopwords"])
+    
+    cursor.close()
 
     k_num = int(request.form["k_num"])
 
@@ -102,7 +105,7 @@ def clustering():
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
         tfidf_matrix.toarray(),
-        columns=tfidf_vectorizer.get_feature_names_out(),
+        columns=tfidf_vectorizer.get_feature_names(),
         index=df.index,
     )
 
@@ -113,6 +116,8 @@ def clustering():
 
     cluster_centers = kmeans.cluster_centers_
     cluster_counts = df["cluster_label"].value_counts()
+    # Menambahkan 1 digit ke setiap elemen di kolom "cluster label"
+    df['cluster_label'] = df['cluster_label'] + 1
 
     print(df)
 
@@ -124,7 +129,7 @@ def clustering():
 
     # Menyimpan DataFrame ke dalam tabel MySQL
     engine = create_engine(
-        "mysql+mysqlconnector://root:12344321@localhost/db_daftarskripsi", echo=False
+        "mysql+mysqlconnector://root:@localhost/db_daftarskripsi", echo=False
     )
     inspector = inspect(engine)
 
@@ -132,8 +137,11 @@ def clustering():
         # Table doesn't exist, create it
         df_2.to_sql(name="daftar_cluster", con=engine, if_exists="replace", index=False)
     else:
-        # Table exists, append the data
-        df_2.to_sql(name="daftar_cluster", con=engine, if_exists="append", index=False)
+        # Table exists, replace the data
+        with engine.connect() as conn, conn.begin():
+            delete_query = text("DELETE FROM daftar_cluster")
+            conn.execute(delete_query)
+            df_2.to_sql(name="daftar_cluster", con=conn, if_exists="append", index=False)
 
     return redirect(url_for("index"))
 
