@@ -15,7 +15,6 @@ from sqlalchemy import inspect
 from sqlalchemy import text
 from dotenv import load_dotenv
 import os
-from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
@@ -27,8 +26,6 @@ mydb = mysql.connector.connect(
     password=os.getenv("DATABASE_PASSWORD"),
     database=os.getenv("DATABASE_NAME"),
 )
-
-app = Flask(__name__)
 
 
 def remove_symbols_and_numbers(text):
@@ -136,11 +133,8 @@ def clustering():
     ]
 
     # Menyimpan DataFrame ke dalam tabel MySQL
-    load_dotenv()
-
     engine = create_engine(
-        f"mysql+mysqlconnector://{os.getenv('DATABASE_USER')}:{os.getenv('DATABASE_PASSWORD')}@{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}",
-        echo=False,
+        "mysql+mysqlconnector://root:@localhost/db_daftarskripsi", echo=False
     )
     inspector = inspect(engine)
 
@@ -313,4 +307,5 @@ def hapus_stopwords(stopwords_id):
 
 
 if __name__ == "__main__":
-    app.run()
+    debug_mode = os.getenv("FLASK_DEBUG") == "1"
+    app.run(debug=debug_mode)
