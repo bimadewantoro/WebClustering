@@ -43,72 +43,72 @@
             <input class="form-control" type="number" id="k_num" name="k_num">
             <button class="btn btn-clustering my-3">Clustering</button>
           </div>
-        </div>
+      </div>
       </form>
-        <div class=" col-md-6 d-flex abumuda justify-content-center align-items-center m-3 uhuy zoom" style="border-radius: 20px; height: 250px;">
-              <div style="text-align: center;">
-                <p style="font-weight: 600;">Alur Clustering</p>
-                <img src="{{ url_for('static', filename='assets/alur.png') }}" style="width: 80%;" alt="Alur Clustering">
-              </div>
-          </div>
-      </div>
-
-    </div>
-
-    <!-- Tabel -->
-    <div class="container abumuda uhuy zoom" style="padding: 60px; border-radius: 20px; margin-top: 32px; margin-bottom: 32px;">
-      <p style="font-weight: 600; font-size: 33.68px;">Hasil Clustering</p>
-
-      <div>
-        <table class="table table-hover bdr">
-          <thead class="judul-table bg-ungu">
-            <tr>
-              <th>Judul</th>
-              <th>Nama</th>
-              <th>Tahun</th>
-              <th>Prodi</th>
-              <th>Cluster</th>
-            </tr>
-          </thead>
-
-          <tbody style="background-color: white;">
-            {% for row in skripsi %}
-            <tr>
-              <th>{{ row[0] }} </th>
-              <td>{{ row[1] }}</td>
-              <td>{{ row[2] }}</td>
-              <td>{{ row[3] }}</td>
-              <td>{{ row[4] }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-
-      </div>
-      <div class="row">
-        <div class="col-md-6 align-self-center">
-          <p id="dataTable_info" class="dataTables_info" role="status" aria-live="polite">Showing 1 to 5</p>
-        </div>
-        <div class="col-md-6">
-          <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
-            {% if pagination %}
-            <ul class="pagination">
-              {{ pagination.links }}
-            </ul>
-            {% endif %}
-          </nav>
+      <div class=" col-md-6 d-flex abumuda justify-content-center align-items-center m-3 uhuy zoom" style="border-radius: 20px; height: 250px;">
+        <div style="text-align: center;">
+          <p style="font-weight: 600;">Alur Clustering</p>
+          <img src="{{ url_for('static', filename='assets/alur.png') }}" style="width: 80%;" alt="Alur Clustering">
         </div>
       </div>
-
     </div>
 
+  </div>
 
+  <!-- Tabel -->
+  <div class="container abumuda uhuy zoom" style="padding: 60px; border-radius: 20px; margin-top: 32px; margin-bottom: 32px;">
+    <p style="font-weight: 600; font-size: 33.68px;">Hasil Clustering</p>
 
+    <form method="GET" action="" style="margin-bottom: 16px; text-align: right;">
+      <span style="font-weight: bold;">Filter: </span>
+      <select id="clusterDropdown" name="cluster" onchange="this.form.submit()" style="background-color: #F2F2F2">
+        <option value="">All Clusters</option>
+        {% for cluster in clusters %}
+        <option value="{{ cluster }}">Cluster {{ cluster }}</option>
+        {% endfor %}
+      </select>
+    </form>
 
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        var selectedCluster = "{{ selected_cluster }}";
+        if (selectedCluster) {
+          document.getElementById("clusterDropdown").value = selectedCluster;
+        }
+      });
+    </script>
 
+    <div>
+      <table class="table table-hover bdr">
+        <thead class="judul-table bg-ungu">
+          <tr>
+            <th style="width: 8%;">Cluster</th>
+            <th>Tahun</th>
+            <th>ID</th>
+            <th>Judul</th>
+            <th>Nama</th>
+            <th>Prodi</th>
+          </tr>
+        </thead>
 
-    <!-- Option 1: Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+        <tbody style="background-color: white;">
+          {% for row in filtered_data %}
+          <tr>
+            <td style="width: 8%;">Cluster {{ row[4] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>ID</td>
+            <th>{{ row[0] }}</th>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[3] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Option 1: Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 
 </body>
 

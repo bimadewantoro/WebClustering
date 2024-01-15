@@ -14,6 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy import text
 from dotenv import load_dotenv
+from itertools import groupby
 import os
 
 load_dotenv()
@@ -48,13 +49,19 @@ def apply_stemming(words):
 def index():
     cursor = mydb.cursor()
 
-    # Ambil data dari tabel 'daftar_cluster'
-    cursor.execute("SELECT * FROM daftar_cluster")
+    # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
+    cursor.execute("SELECT * FROM daftar_cluster ORDER BY cluster_label")
     data = cursor.fetchall()  # Ambil hasil query
 
     # Menghitung jumlah data pada tabel 'daftar_skripsi'
     cursor.execute("SELECT COUNT(*) FROM daftar_skripsi")
     count_result = cursor.fetchall()  # Mengambil hasil hitung
+
+    cursor.execute("SELECT MAX(cluster_label) FROM daftar_cluster")
+    max_cluster_label = cursor.fetchone()[0]
+    max_cluster_label = int(max_cluster_label)
+
+    clusters = list(range(1, max_cluster_label + 1))
 
     # Menutup kursor
     cursor.close()
@@ -62,17 +69,30 @@ def index():
     # Mendapatkan nilai jumlah data dari hasil query COUNT(*)
     count = count_result[0][0]  # Mengambil nilai jumlah dari hasil query COUNT(*)
     page = request.args.get(get_page_parameter(), type=int, default=1)
-    per_page = 5  # set the number of rows to display per page
+    per_page = 10  # set the number of rows to display per page
     start_index = (page - 1) * per_page
     end_index = start_index + per_page
     data_len = len(data)
     pagination_data = data[start_index:end_index]
     pagination = Pagination(page=page, total=data_len, per_page=per_page)
+
+    selected_cluster = request.args.get("cluster")
+
+    if selected_cluster:
+        filtered_data = [
+            row for row in data if str(row[4]).strip() == str(selected_cluster).strip()
+        ]
+    else:
+        filtered_data = data
+
     return render_template(
         "home.php",
         skripsi=pagination_data,
         count=count,
         pagination=pagination,
+        clusters=clusters,
+        filtered_data=filtered_data,
+        selected_cluster=selected_cluster,
         message=request.args.get("message"),
     )
 
@@ -110,7 +130,7 @@ def clustering():
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
         tfidf_matrix.toarray(),
-        columns=tfidf_vectorizer.get_feature_names(),
+        columns=tfidf_vectorizer.get_feature_names_out(),
         index=df.index,
     )
 
@@ -134,7 +154,8 @@ def clustering():
 
     # Menyimpan DataFrame ke dalam tabel MySQL
     engine = create_engine(
-        "mysql+mysqlconnector://root:@localhost/db_daftarskripsi", echo=False
+        f"mysql+mysqlconnector://{os.getenv('DATABASE_USER')}:{os.getenv('DATABASE_PASSWORD')}@{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}",
+        echo=False,
     )
     inspector = inspect(engine)
 
