@@ -59,9 +59,9 @@ def index():
 
     cursor.execute("SELECT MAX(cluster_label) FROM daftar_cluster")
     max_cluster_label = cursor.fetchone()[0]
-    max_cluster_label = int(max_cluster_label)
+    max_cluster_label_int = int(max_cluster_label)
 
-    clusters = list(range(1, max_cluster_label + 1))
+    clusters = list(range(1, max_cluster_label_int + 1))
 
     # Menutup kursor
     cursor.close()
