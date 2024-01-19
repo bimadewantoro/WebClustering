@@ -58,10 +58,10 @@ def index():
     count_result = cursor.fetchall()  # Mengambil hasil hitung
 
     cursor.execute("SELECT MAX(cluster_label) FROM daftar_cluster")
-    max_cluster_label = cursor.fetchone()[0]
-    max_cluster_label_int = int(max_cluster_label)
+    max_cluster_label_result = cursor.fetchone()[0]
+    max_cluster_label_int = int(max_cluster_label_result) if max_cluster_label_result is not None else 0
 
-    clusters = list(range(1, max_cluster_label_int + 1))
+    clusters = list(map(str, range(1, max_cluster_label_int + 1)))
 
     # Menutup kursor
     cursor.close()
