@@ -58,13 +58,6 @@ def apply_stemming(words):
 
 @app.route("/")
 def index():
-    # Clear variables
-    skripsi = []
-    count = []
-    pagination = []
-    clusters = []
-    filtered_data = []
-    selected_cluster = None
     cursor = mydb.cursor()
 
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
