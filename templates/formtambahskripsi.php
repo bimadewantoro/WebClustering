@@ -31,6 +31,16 @@
         </div>
 
         <div class="form-group">
+          <label for="abstract">Abstrak</label>
+          <input type="text" class="form-control" id="abstract" name="abstract" placeholder="Masukkan Abstrak">
+        </div>
+
+        <div class="form-group">
+          <label for="keyword">Keyword</label>
+          <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Masukkan Keyword">
+        </div>
+
+        <div class="form-group">
           <label for="namaPeneliti">Nama Peneliti</label>
           <input type="text" class="form-control" id="namaPeneliti" name="namaPeneliti" placeholder="Masukkan Nama Peneliti">
         </div>
