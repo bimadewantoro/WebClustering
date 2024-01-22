@@ -31,20 +31,28 @@
           <label for="judulSkripsi">Judul Skripsi</label>
           <input type="text" class="form-control" id="judulSkripsi" name="judulSkripsi" placeholder="Masukkan Judul Skripsi" value="{{ skripsi[1] }}">
         </div>
+        <div class="form-group">
+          <label for="abstract">Abstrak</label>
+          <input type="text" class="form-control" id="abstract" name="abstract" placeholder="Masukkan Abstrak" value="{{ skripsi[2] }}">
+        </div>
+        <div class="form-group">
+          <label for="keyword">Keyword</label>
+          <input type="text" class="form-control" id="keyword" name="keyword" placeholder="Masukkan Nama Keyword" value="{{ skripsi[3] }}">
+        </div>
 
         <div class="form-group">
           <label for="namaPeneliti">Nama Peneliti</label>
-          <input type="text" class="form-control" id="namaPeneliti" name="namaPeneliti" placeholder="Masukkan Nama Peneliti" value="{{ skripsi[2] }}">
+          <input type="text" class="form-control" id="namaPeneliti" name="namaPeneliti" placeholder="Masukkan Nama Peneliti" value="{{ skripsi[4] }}">
         </div>
 
         <div class="form-group">
           <label for="tahun">Tahun</label>
-          <input type="number" class="form-control" id="tahun" name="tahun" placeholder="Masukkan Tahun" value="{{ skripsi[3] }}">
+          <input type="number" class="form-control" id="tahun" name="tahun" placeholder="Masukkan Tahun" value="{{ skripsi[5] }}">
         </div>
 
         <div class="form-group">
           <label for="programStudi">Program Studi</label>
-          <input type="text" class="form-control" id="programStudi" name="programStudi" placeholder="Masukkan Program Studi" value="{{ skripsi[4] }}">
+          <input type="text" class="form-control" id="programStudi" name="programStudi" placeholder="Masukkan Program Studi" value="{{ skripsi[6] }}">
         </div>
 
         <button type="submit" class="btn btn-primary btn-clustering zoom" style="margin-top: 16px;">Submit</button>

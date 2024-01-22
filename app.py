@@ -5,6 +5,7 @@ import pandas as pd
 import re
 from nltk.tokenize import word_tokenize
 import nltk
+import json
 
 nltk.download("punkt")
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
@@ -15,13 +16,16 @@ from sqlalchemy import inspect
 from sqlalchemy import text
 from dotenv import load_dotenv
 import os
+from flask_caching import Cache
 
 load_dotenv()
 app = Flask(__name__)
+cache = Cache(app)
 
 # Koneksi ke database MySQL
 mydb = mysql.connector.connect(
     host=os.getenv("DATABASE_HOST"),
+    port=os.getenv("DATABASE_PORT"),
     user=os.getenv("DATABASE_USER"),
     password=os.getenv("DATABASE_PASSWORD"),
     database=os.getenv("DATABASE_NAME"),
@@ -46,10 +50,14 @@ def apply_stemming(words):
 
 @app.route("/")
 def index():
+    skripsi=[]
+    count=[]
+    pagination=[]
+    message=[]
     cursor = mydb.cursor()
 
     # Ambil data dari tabel 'daftar_cluster'
-    cursor.execute("SELECT * FROM daftar_cluster")
+    cursor.execute("SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM clustered")
     data = cursor.fetchall()  # Ambil hasil query
 
     # Menghitung jumlah data pada tabel 'daftar_skripsi'
@@ -79,23 +87,28 @@ def index():
 
 @app.route("/clustering", methods=["POST", "GET"])
 def clustering():
+    # Mengambil data skripsi dari database
     cursor = mydb.cursor()
     cursor.execute("SELECT * FROM daftar_skripsi")
     data_skripsi = cursor.fetchall()
 
+    # Mengambil daftar stopwords dari database
     cursor.execute("SELECT stopwords FROM stopwords")
     data_stopwords = cursor.fetchall()
     df_stopwords = pd.DataFrame(data_stopwords, columns=["stopwords"])
 
     cursor.close()
 
+    # Mendapatkan jumlah cluster (k) dari form input
     k_num = int(request.form["k_num"])
 
-    # Mengubah seluruh data menjadi DataFrame
+    # Mengubah data skripsi menjadi DataFrame
     df = pd.DataFrame(
         data_skripsi,
-        columns=["id", "JudulSkripsi", "NamaPeneliti", "Tahun", "ProgramStudi"],
+        columns=["id", "JudulSkripsi", "abstract", "keyword", "NamaPeneliti", "Tahun", "ProgramStudi"],
     )
+
+    # Membersihkan dan memproses judul skripsi
     df["judul_cleaned"] = df["JudulSkripsi"].apply(remove_symbols_and_numbers)
     df["judul_tokenized"] = df["judul_cleaned"].apply(lambda x: word_tokenize(str(x)))
     df["judul_lower"] = df["judul_tokenized"].apply(
@@ -106,6 +119,7 @@ def clustering():
     )
     df["judul_stemmed"] = df["judul_no_stopwords"].apply(apply_stemming)
 
+    # Membuat TF-IDF matrix
     tfidf_vectorizer = TfidfVectorizer()
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
@@ -113,43 +127,61 @@ def clustering():
         columns=tfidf_vectorizer.get_feature_names(),
         index=df.index,
     )
+    tfidf_df.to_csv("tfidf.csv")
 
+    # Melakukan clustering menggunakan KMeans
     num_clusters = k_num
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     kmeans.fit(tfidf_matrix)
     df["cluster_label"] = kmeans.labels_
 
+    # Mendapatkan informasi tentang cluster
     cluster_centers = kmeans.cluster_centers_
     cluster_counts = df["cluster_label"].value_counts()
     # Menambahkan 1 digit ke setiap elemen di kolom "cluster label"
     df["cluster_label"] = df["cluster_label"] + 1
 
-    print(df)
-
+    # Menyimpan hasil clustering ke dalam file CSV
     df.to_csv("df.csv", index=True)
+
     # Memilih kolom yang ingin disimpan
     df_2 = df[
-        ["JudulSkripsi", "NamaPeneliti", "Tahun", "ProgramStudi", "cluster_label"]
+        ["id","JudulSkripsi", "abstract", "keyword","NamaPeneliti", "Tahun", "ProgramStudi", "judul_cleaned", "judul_tokenized", "judul_lower", "judul_no_stopwords", "judul_stemmed", "cluster_label"]
     ]
+    # Menggabungkan token, lowercased, dan no-stopwords menjadi string
+    df_2['judul_tokenized'] = df_2['judul_tokenized'].apply(lambda x: ', '.join(map(str, x)))
+    df_2['judul_lower'] = df_2['judul_lower'].apply(lambda x: ', '.join(map(str, x)))
+    df_2['judul_no_stopwords'] = df_2['judul_no_stopwords'].apply(lambda x: ', '.join(map(str, x)))
+    # Menyimpan DataFrame hasil preprocessing dan clustering ke dalam file CSV
+    df_2.to_csv("df2.csv", index=True)
 
     # Menyimpan DataFrame ke dalam tabel MySQL
     engine = create_engine(
-        "mysql+mysqlconnector://root:@localhost/db_daftarskripsi", echo=False
+        "mysql+mysqlconnector://root:@localhost:3307/db_daftarskripsi", echo=False
     )
     inspector = inspect(engine)
 
-    if not inspector.has_table("daftar_cluster"):
-        # Table doesn't exist, create it
-        df_2.to_sql(name="daftar_cluster", con=engine, if_exists="replace", index=False)
+    # Menyimpan hasil clustering ke dalam tabel "clustered" di MySQL
+    if not inspector.has_table("clustered"):
+        # Tabel belum ada, buat baru
+        df_2.to_sql(name="clustered", con=engine, if_exists="replace", index=False)
     else:
-        # Table exists, replace the data
+        # Tabel sudah ada, ganti data yang ada
         with engine.connect() as conn, conn.begin():
-            delete_query = text("DELETE FROM daftar_cluster")
+            delete_query = text("DELETE FROM clustered")
             conn.execute(delete_query)
             df_2.to_sql(
-                name="daftar_cluster", con=conn, if_exists="append", index=False
+                name="clustered", con=conn, if_exists="append", index=False
             )
+            
+    # Menyimpan hasil TF-IDF ke dalam tabel "tfidf" di MySQL
+    table_name = 'tfidf'  # Ganti dengan nama tabel yang diinginkan
+    tfidf_df.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
 
+    # Membersihkan cache setelah perubahan data
+    cache.clear()
+
+    # Mengarahkan kembali ke halaman utama
     return redirect(url_for("index"))
 
 
@@ -187,15 +219,19 @@ def handle_tambah_skripsi():
         try:
             cursor = mydb.cursor()
             judul_skripsi = request.form["judulSkripsi"]
+            abstract = request.form["abstract"]
+            keyword = request.form["keyword"]
             nama_peneliti = request.form["namaPeneliti"]
             tahun = request.form["tahun"]
             program_studi = request.form["programStudi"]
 
-            insert_query = "INSERT INTO daftar_skripsi (judul_skripsi, nama_peneliti, tahun, program_studi) VALUES (%s, %s, %s, %s)"
+            insert_query = "INSERT INTO daftar_skripsi (judul_skripsi, abstract, keyword, nama_peneliti, tahun, program_studi) VALUES (%s, %s, %s, %s, %s, %s)"
             cursor.execute(
                 insert_query,
                 (
                     judul_skripsi,
+                    abstract,
+                    keyword,
                     nama_peneliti,
                     tahun,
                     program_studi,
@@ -238,16 +274,20 @@ def update_skripsi():
     if request.method == "POST":
         skripsi_id = request.form["skripsi_id"]
         judul_skripsi = request.form["judulSkripsi"]
+        abstract = request.form["abstract"]
+        keyword = request.form["keyword"]
         nama_peneliti = request.form["namaPeneliti"]
         tahun = request.form["tahun"]
         program_studi = request.form["programStudi"]
 
         cursor = mydb.cursor()
-        update_query = "UPDATE daftar_skripsi SET judul_skripsi = %s, nama_peneliti = %s, tahun = %s, program_studi = %s WHERE id = %s"
+        update_query = "UPDATE daftar_skripsi SET judul_skripsi = %s, abstract = %s, keyword = %s, nama_peneliti = %s, tahun = %s, program_studi = %s WHERE id = %s"
         cursor.execute(
             update_query,
             (
                 judul_skripsi,
+                abstract,
+                keyword,
                 nama_peneliti,
                 tahun,
                 program_studi,
