@@ -17,11 +17,9 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 from itertools import groupby
 import os
-from flask_caching import Cache
 
 load_dotenv()
 app = Flask(__name__)
-cache = Cache(app)
 
 # Koneksi ke database MySQL
 mydb = mysql.connector.connect(
@@ -51,14 +49,17 @@ def apply_stemming(words):
 
 @app.route("/")
 def index():
-    skripsi=[]
-    count=[]
-    pagination=[]
-    message=[]
+    # Clear variables
+    skripsi = []
+    count = []
+    pagination = []
+    clusters = []
+    filtered_data = []
+    selected_cluster = None
     cursor = mydb.cursor()
 
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
-    cursor.execute("SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM clustered ORDER BY cluster_label")
+    cursor.execute("SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label")
     data = cursor.fetchall()  # Ambil hasil query
 
     # Menghitung jumlah data pada tabel 'daftar_skripsi'
@@ -144,7 +145,7 @@ def clustering():
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
         tfidf_matrix.toarray(),
-        columns=tfidf_vectorizer.get_feature_names_out(),
+        columns=tfidf_vectorizer.get_feature_names(),
         index=df.index,
     )
     tfidf_df.to_csv("tfidf.csv")
@@ -177,30 +178,27 @@ def clustering():
 
     # Menyimpan DataFrame ke dalam tabel MySQL
     engine = create_engine(
-        f"mysql+mysqlconnector://{os.getenv('DATABASE_USER')}:{os.getenv('DATABASE_PASSWORD')}@{os.getenv('DATABASE_HOST')}/{os.getenv('DATABASE_NAME')}",
+        f"mysql+mysqlconnector://{os.getenv('DATABASE_USER')}:{os.getenv('DATABASE_PASSWORD')}@{os.getenv('DATABASE_HOST')}:{os.getenv('DATABASE_PORT')}/{os.getenv('DATABASE_NAME')}",
         echo=False,
     )
     inspector = inspect(engine)
 
-    # Menyimpan hasil clustering ke dalam tabel "clustered" di MySQL
-    if not inspector.has_table("clustered"):
+    # Menyimpan hasil clustering ke dalam tabel "daftar_cluster" di MySQL
+    if not inspector.has_table("daftar_cluster"):
         # Tabel belum ada, buat baru
-        df_2.to_sql(name="clustered", con=engine, if_exists="replace", index=False)
+        df_2.to_sql(name="daftar_cluster", con=engine, if_exists="replace", index=False)
     else:
         # Tabel sudah ada, ganti data yang ada
         with engine.connect() as conn, conn.begin():
-            delete_query = text("DELETE FROM clustered")
+            delete_query = text("DELETE FROM daftar_cluster")
             conn.execute(delete_query)
             df_2.to_sql(
-                name="clustered", con=conn, if_exists="append", index=False
+                name="daftar_cluster", con=conn, if_exists="append", index=False
             )
             
     # Menyimpan hasil TF-IDF ke dalam tabel "tfidf" di MySQL
     table_name = 'tfidf'  # Ganti dengan nama tabel yang diinginkan
     tfidf_df.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
-
-    # Membersihkan cache setelah perubahan data
-    cache.clear()
 
     # Mengarahkan kembali ke halaman utama
     return redirect(url_for("index"))
@@ -210,7 +208,7 @@ def clustering():
 def dataskripsi():
     cursor = mydb.cursor()
     cursor.execute(
-        "SELECT * FROM daftar_skripsi"
+        "SELECT id, nama_peneliti, tahun, program_studi FROM daftar_skripsi"
     )  # Ambil data dari tabel 'daftar_skripsi'
     data = cursor.fetchall()  # Ambil hasil query
     cursor.close()
@@ -369,4 +367,4 @@ def hapus_stopwords(stopwords_id):
 
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG") == "1"
-    app.run(debug=debug_mode)
+    app.run(use_reloader=True, debug=debug_mode)

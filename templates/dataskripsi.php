@@ -29,7 +29,7 @@
       <table class="table table-hover bdr">
         <thead class="judul-table bg-ungu">
           <tr>
-            <th>No.</th>
+            <th>Id</th>
             <th>Judul</th>
             <th>Nama</th>
             <th>Tahun</th>
