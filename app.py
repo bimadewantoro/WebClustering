@@ -29,6 +29,7 @@ try:
         user=os.getenv("DATABASE_USER"),
         password=os.getenv("DATABASE_PASSWORD"),
         database=os.getenv("DATABASE_NAME"),
+        autocommit=True,
     )
 except mysql.connector.Error as err:
     print(f"Error: {err}")
@@ -65,28 +66,25 @@ def index():
     clusters = []
     filtered_data = []
     selected_cluster = None
-    cursor = mydb.cursor()
 
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
-    cursor.execute(
-        "SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label"
-    )
-    data = cursor.fetchall()  # Ambil hasil query
+    with mydb.cursor() as cursor:
+        cursor.execute(
+            "SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label"
+        )
+        data = cursor.fetchall()  # Ambil hasil query
 
-    # Menghitung jumlah data pada tabel 'daftar_skripsi'
-    cursor.execute("SELECT COUNT(*) FROM daftar_skripsi")
-    count_result = cursor.fetchall()  # Mengambil hasil hitung
+        # Menghitung jumlah data pada tabel 'daftar_skripsi'
+        cursor.execute("SELECT COUNT(*) FROM daftar_skripsi")
+        count_result = cursor.fetchall()  # Mengambil hasil hitung
 
-    cursor.execute("SELECT MAX(cluster_label) FROM daftar_cluster")
-    max_cluster_label_result = cursor.fetchone()[0]
-    max_cluster_label_int = (
-        int(max_cluster_label_result) if max_cluster_label_result is not None else 0
-    )
+        cursor.execute("SELECT MAX(cluster_label) FROM daftar_cluster")
+        max_cluster_label_result = cursor.fetchone()[0]
+        max_cluster_label_int = (
+            int(max_cluster_label_result) if max_cluster_label_result is not None else 0
+        )
 
-    clusters = list(map(str, range(1, max_cluster_label_int + 1)))
-
-    # Menutup kursor
-    cursor.close()
+        clusters = list(map(str, range(1, max_cluster_label_int + 1)))
 
     # Mendapatkan nilai jumlah data dari hasil query COUNT(*)
     count = count_result[0][0]  # Mengambil nilai jumlah dari hasil query COUNT(*)
@@ -166,7 +164,7 @@ def clustering():
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
         tfidf_matrix.toarray(),
-        columns=tfidf_vectorizer.get_feature_names(),
+        columns=tfidf_vectorizer.get_feature_names_out(),
         index=df.index,
     )
     tfidf_df.to_csv("tfidf.csv")
