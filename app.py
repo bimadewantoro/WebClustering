@@ -22,13 +22,22 @@ load_dotenv()
 app = Flask(__name__)
 
 # Koneksi ke database MySQL
-mydb = mysql.connector.connect(
-    host=os.getenv("DATABASE_HOST"),
-    port=os.getenv("DATABASE_PORT"),
-    user=os.getenv("DATABASE_USER"),
-    password=os.getenv("DATABASE_PASSWORD"),
-    database=os.getenv("DATABASE_NAME"),
-)
+try:
+    mydb = mysql.connector.connect(
+        host=os.getenv("DATABASE_HOST"),
+        port=int(os.getenv("DATABASE_PORT", 3306)),
+        user=os.getenv("DATABASE_USER"),
+        password=os.getenv("DATABASE_PASSWORD"),
+        database=os.getenv("DATABASE_NAME"),
+    )
+except mysql.connector.Error as err:
+    print(f"Error: {err}")
+    mydb = None
+
+if mydb:
+    print("Connected to MySQL database successfully.")
+else:
+    print("Failed to connect to MySQL database.")
 
 
 def remove_symbols_and_numbers(text):
@@ -59,7 +68,9 @@ def index():
     cursor = mydb.cursor()
 
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
-    cursor.execute("SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label")
+    cursor.execute(
+        "SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label"
+    )
     data = cursor.fetchall()  # Ambil hasil query
 
     # Menghitung jumlah data pada tabel 'daftar_skripsi'
@@ -68,7 +79,9 @@ def index():
 
     cursor.execute("SELECT MAX(cluster_label) FROM daftar_cluster")
     max_cluster_label_result = cursor.fetchone()[0]
-    max_cluster_label_int = int(max_cluster_label_result) if max_cluster_label_result is not None else 0
+    max_cluster_label_int = (
+        int(max_cluster_label_result) if max_cluster_label_result is not None else 0
+    )
 
     clusters = list(map(str, range(1, max_cluster_label_int + 1)))
 
@@ -126,7 +139,15 @@ def clustering():
     # Mengubah data skripsi menjadi DataFrame
     df = pd.DataFrame(
         data_skripsi,
-        columns=["id", "JudulSkripsi", "abstract", "keyword", "NamaPeneliti", "Tahun", "ProgramStudi"],
+        columns=[
+            "id",
+            "JudulSkripsi",
+            "abstract",
+            "keyword",
+            "NamaPeneliti",
+            "Tahun",
+            "ProgramStudi",
+        ],
     )
 
     # Membersihkan dan memproses judul skripsi
@@ -167,12 +188,30 @@ def clustering():
 
     # Memilih kolom yang ingin disimpan
     df_2 = df[
-        ["id","JudulSkripsi", "abstract", "keyword","NamaPeneliti", "Tahun", "ProgramStudi", "judul_cleaned", "judul_tokenized", "judul_lower", "judul_no_stopwords", "judul_stemmed", "cluster_label"]
+        [
+            "id",
+            "JudulSkripsi",
+            "abstract",
+            "keyword",
+            "NamaPeneliti",
+            "Tahun",
+            "ProgramStudi",
+            "judul_cleaned",
+            "judul_tokenized",
+            "judul_lower",
+            "judul_no_stopwords",
+            "judul_stemmed",
+            "cluster_label",
+        ]
     ]
     # Menggabungkan token, lowercased, dan no-stopwords menjadi string
-    df_2['judul_tokenized'] = df_2['judul_tokenized'].apply(lambda x: ', '.join(map(str, x)))
-    df_2['judul_lower'] = df_2['judul_lower'].apply(lambda x: ', '.join(map(str, x)))
-    df_2['judul_no_stopwords'] = df_2['judul_no_stopwords'].apply(lambda x: ', '.join(map(str, x)))
+    df_2["judul_tokenized"] = df_2["judul_tokenized"].apply(
+        lambda x: ", ".join(map(str, x))
+    )
+    df_2["judul_lower"] = df_2["judul_lower"].apply(lambda x: ", ".join(map(str, x)))
+    df_2["judul_no_stopwords"] = df_2["judul_no_stopwords"].apply(
+        lambda x: ", ".join(map(str, x))
+    )
     # Menyimpan DataFrame hasil preprocessing dan clustering ke dalam file CSV
     df_2.to_csv("df2.csv", index=True)
 
@@ -195,10 +234,10 @@ def clustering():
             df_2.to_sql(
                 name="daftar_cluster", con=conn, if_exists="append", index=False
             )
-            
+
     # Menyimpan hasil TF-IDF ke dalam tabel "tfidf" di MySQL
-    table_name = 'tfidf'  # Ganti dengan nama tabel yang diinginkan
-    tfidf_df.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
+    table_name = "tfidf"  # Ganti dengan nama tabel yang diinginkan
+    tfidf_df.to_sql(name=table_name, con=engine, if_exists="replace", index=False)
 
     # Mengarahkan kembali ke halaman utama
     return redirect(url_for("index"))
