@@ -7,8 +7,7 @@ from nltk.tokenize import word_tokenize
 import nltk
 import json
 
-from Sastrawi.Tokenization import TokenizerFactory
-from Sastrawi.Tokenization import TokenizerFactory
+import ntlk.data
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
@@ -155,12 +154,14 @@ def clustering():
         ],
     )
 
-
     # Membersihkan dan memproses judul skripsi
-    factory = TokenizerFactory()
-    tokenizer = factory.create_default_tokenizer()
+    root = os.path.dirname(path.abspath(__file__))
+    download_dir = os.path.join(root, 'nltk_data')
+    nltk.data.load(
+    os.path.join(download_dir, '/punkt/malayam.pickle')
+    )
     df["judul_cleaned"] = df["JudulSkripsi"].apply(remove_symbols_and_numbers)
-    df["judul_tokenized"] = df["judul_cleaned"].apply(lambda x: tokenizer.tokenize(str(x)))
+    df["judul_tokenized"] = df["judul_cleaned"].apply(lambda x: word_tokenize(str(x)))
     df["judul_lower"] = df["judul_tokenized"].apply(
         lambda x: [word.lower() for word in x]
     )
