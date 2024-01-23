@@ -25,11 +25,11 @@ app = Flask(__name__)
 # Koneksi ke database MySQL
 try:
     mydb = mysql.connector.connect(
-        host=os.getenv("DATABASE_HOST"),
-        port=int(os.getenv("DATABASE_PORT", 3306)),
-        user=os.getenv("DATABASE_USER"),
-        password=os.getenv("DATABASE_PASSWORD"),
-        database=os.getenv("DATABASE_NAME"),
+        host=os.getenv("ik1eybdutgxsm0lo.cbetxkdyhwsb.us-east-1.rds.amazonaws.com"),
+        port=int(os.getenv("3306")),
+        user=os.getenv("bjhb7gkjwxjpsywe"),
+        password=os.getenv("vsfu0br75eim6sdp"),
+        database=os.getenv("m6xghe2dk2x1x51k"),
         autocommit=True,
     )
 except mysql.connector.Error as err:
@@ -165,7 +165,7 @@ def clustering():
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
         tfidf_matrix.toarray(),
-        columns=tfidf_vectorizer.get_feature_names(),
+        columns=tfidf_vectorizer.get_feature_names_out(),
         index=df.index,
     )
     tfidf_df.to_csv("tfidf.csv")
