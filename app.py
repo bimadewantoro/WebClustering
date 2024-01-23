@@ -7,7 +7,7 @@ from nltk.tokenize import word_tokenize
 import nltk
 import json
 
-import ntlk.data
+#nltk.download("punkt")
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
@@ -57,6 +57,15 @@ def apply_stemming(words):
     stemmed_words = [stemmer.stem(word) for word in words]
     return " ".join(stemmed_words)
 
+import pickle
+import os
+import nltk.data
+# Provide the path to your tokenizer file
+# Tentukan direktori di mana Anda menyimpan file pickle
+malayalam_punkt_path = "nltk_data/tokenizers/punkt/malayalam.pickle"
+
+# Muat model tokenizer Malayalam
+nltk.data.load(malayalam_punkt_path)
 
 @app.route("/")
 def index():
@@ -155,11 +164,6 @@ def clustering():
     )
 
     # Membersihkan dan memproses judul skripsi
-    root = os.path.dirname(path.abspath(__file__))
-    download_dir = os.path.join(root, 'nltk_data')
-    nltk.data.load(
-    os.path.join(download_dir, '/punkt/malayam.pickle')
-    )
     df["judul_cleaned"] = df["JudulSkripsi"].apply(remove_symbols_and_numbers)
     df["judul_tokenized"] = df["judul_cleaned"].apply(lambda x: word_tokenize(str(x)))
     df["judul_lower"] = df["judul_tokenized"].apply(
