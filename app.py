@@ -26,7 +26,7 @@ app = Flask(__name__)
 try:
     mydb = mysql.connector.connect(
         host=os.getenv("ik1eybdutgxsm0lo.cbetxkdyhwsb.us-east-1.rds.amazonaws.com"),
-        port=int(os.getenv("3306")),
+        port=int(os.getenv(3306)),
         user=os.getenv("bjhb7gkjwxjpsywe"),
         password=os.getenv("vsfu0br75eim6sdp"),
         database=os.getenv("m6xghe2dk2x1x51k"),
