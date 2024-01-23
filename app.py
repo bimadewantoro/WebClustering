@@ -7,6 +7,7 @@ from nltk.tokenize import word_tokenize
 import nltk
 import json
 
+nltk.download("punkt")
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
@@ -67,6 +68,7 @@ def index():
     filtered_data = []
     selected_cluster = None
 
+    # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
     cursor = mydb.cursor()
     try:
@@ -280,7 +282,7 @@ def clustering():
 
     # Menyimpan hasil TF-IDF ke dalam tabel "tfidf" di MySQL
     table_name = "tfidf"  # Ganti dengan nama tabel yang diinginkan
-    tfidf_df.to_sql(name="tfidf_matrix", con=engine, if_exists="replace", index=False)
+    tfidf_df.to_sql(name=table_name, con=engine, if_exists="replace", index=False)
 
     # Mengarahkan kembali ke halaman utama
     return redirect(url_for("index"))
