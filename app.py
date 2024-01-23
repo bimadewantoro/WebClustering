@@ -25,11 +25,11 @@ app = Flask(__name__)
 # Koneksi ke database MySQL
 try:
     mydb = mysql.connector.connect(
-        host=os.getenv("ik1eybdutgxsm0lo.cbetxkdyhwsb.us-east-1.rds.amazonaws.com"),
-        port=int(os.getenv(3306)),
-        user=os.getenv("bjhb7gkjwxjpsywe"),
-        password=os.getenv("vsfu0br75eim6sdp"),
-        database=os.getenv("m6xghe2dk2x1x51k"),
+        host=os.getenv("DATABASE_HOST"),
+        port=int(os.getenv("DATABASE_PORT",3306)),
+        user=os.getenv("DATABASE_USER"),
+        password=os.getenv("DATABASE_PASSWORD"),
+        database=os.getenv("DATABASE_NAME"),
         autocommit=True,
     )
 except mysql.connector.Error as err:
@@ -69,7 +69,8 @@ def index():
     selected_cluster = None
 
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
-    with mydb.cursor() as cursor:
+    cursor = mydb.cursor()
+    try:
         cursor.execute(
             "SELECT id, JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label"
         )
@@ -86,6 +87,9 @@ def index():
         )
 
         clusters = list(map(str, range(1, max_cluster_label_int + 1)))
+    finally:
+        cursor.close()
+
 
     # Mendapatkan nilai jumlah data dari hasil query COUNT(*)
     count = count_result[0][0]  # Mengambil nilai jumlah dari hasil query COUNT(*)
