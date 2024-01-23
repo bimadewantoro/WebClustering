@@ -7,7 +7,6 @@ from nltk.tokenize import word_tokenize
 import nltk
 import json
 
-nltk.download("punkt")
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
