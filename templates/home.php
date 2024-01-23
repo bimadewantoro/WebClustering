@@ -96,17 +96,17 @@
                 </thead>
 
                 <tbody style="background-color: white;">
-                    {% for cluster, rows in filtered_data|groupby(4) %}
+                    {% for cluster, rows in filtered_data|groupby(5) %}
                     {% for row in rows %}
                     <tr>
                         {% if loop.first %}
                         <td style="width: 8%;" rowspan="{{ rows|length }}">Cluster {{ cluster }}</td>
                         {% endif %}
-                        <td>{{ row[2] }}</td>
-                        <td>ID</td>
-                        <th>{{ row[0] }}</th>
-                        <td>{{ row[1] }}</td>
                         <td>{{ row[3] }}</td>
+                        <td>{{ row[0] }}</td>
+                        <th>{{ row[1] }}</th>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[4] }}</td>
                     </tr>
                     {% endfor %}
                     {% endfor %}

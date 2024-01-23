@@ -16,6 +16,7 @@ from sqlalchemy import inspect
 from sqlalchemy import text
 from dotenv import load_dotenv
 from itertools import groupby
+from sklearn.metrics import pairwise_distances
 import os
 
 load_dotenv()
@@ -70,7 +71,7 @@ def index():
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
     with mydb.cursor() as cursor:
         cursor.execute(
-            "SELECT JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label"
+            "SELECT id, JudulSkripsi, NamaPeneliti, Tahun, ProgramStudi, cluster_label FROM daftar_cluster ORDER BY cluster_label"
         )
         data = cursor.fetchall()  # Ambil hasil query
 
@@ -164,7 +165,7 @@ def clustering():
     tfidf_matrix = tfidf_vectorizer.fit_transform(df["judul_stemmed"])
     tfidf_df = pd.DataFrame(
         tfidf_matrix.toarray(),
-        columns=tfidf_vectorizer.get_feature_names_out(),
+        columns=tfidf_vectorizer.get_feature_names(),
         index=df.index,
     )
     tfidf_df.to_csv("tfidf.csv")
@@ -178,6 +179,45 @@ def clustering():
     # Mendapatkan informasi tentang cluster
     cluster_centers = kmeans.cluster_centers_
     cluster_counts = df["cluster_label"].value_counts()
+
+    # Get the indices of documents in each cluster
+    cluster_indices = [df.index[df['cluster_label'] == cluster_num].tolist() for cluster_num in range(num_clusters)]
+
+    # Function to calculate average distance within a cluster for a given document index
+    def average_distance_within_cluster(doc_index, cluster_indices):
+        cluster_num = df.loc[doc_index, 'cluster_label']
+        cluster_docs = cluster_indices[cluster_num]
+
+        # Calculate pairwise distances between the given document and all other documents in the same cluster
+        distances = pairwise_distances(tfidf_matrix[doc_index], tfidf_matrix[cluster_docs], metric='cosine')[0]
+
+        # Calculate average distance
+        average_distance = sum(distances) / len(distances)
+
+        return average_distance
+
+    # Calculate and store average distances for each document in the DataFrame
+    df['rata_rata_jarak_antar_dokumen_dalam_satu_kluster'] = df.index.map(lambda x: average_distance_within_cluster(x, cluster_indices))
+
+    # Function to calculate average distance from a document to all documents in other clusters
+    def average_distance_to_other_clusters(doc_index, cluster_indices):
+        cluster_num = df.loc[doc_index, 'cluster_label']
+        cluster_docs = cluster_indices[cluster_num]
+
+        # Calculate pairwise distances between the given document and all documents in other clusters
+        distances = []
+        for other_cluster_num, other_cluster_docs in enumerate(cluster_indices):
+            if other_cluster_num != cluster_num:
+                distances.extend(pairwise_distances(tfidf_matrix[doc_index], tfidf_matrix[other_cluster_docs], metric='cosine')[0])
+
+        # Calculate average distance to other clusters
+        average_distance_to_other_clusters = sum(distances) / len(distances) if len(distances) > 0 else 0
+
+        return average_distance_to_other_clusters
+
+    # Calculate and store average distances to other clusters for each document in the DataFrame
+    df['rata_rata_jarak_antar_dokumen_dengan_kluster_lain'] = df.index.map(lambda x: average_distance_to_other_clusters(x, cluster_indices))
+
     # Menambahkan 1 digit ke setiap elemen di kolom "cluster label"
     df["cluster_label"] = df["cluster_label"] + 1
 
@@ -200,6 +240,8 @@ def clustering():
             "judul_no_stopwords",
             "judul_stemmed",
             "cluster_label",
+            "rata_rata_jarak_antar_dokumen_dalam_satu_kluster",
+            "rata_rata_jarak_antar_dokumen_dengan_kluster_lain"
         ]
     ]
     # Menggabungkan token, lowercased, dan no-stopwords menjadi string
