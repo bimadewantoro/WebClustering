@@ -280,7 +280,7 @@ def clustering():
 
     # Menyimpan hasil TF-IDF ke dalam tabel "tfidf" di MySQL
     table_name = "tfidf"  # Ganti dengan nama tabel yang diinginkan
-    tfidf_df.to_sql(name=table_name, con=engine, if_exists="replace", index=False)
+    tfidf_df.to_sql(name="tfidf_matrix", con=engine, if_exists="replace", index=False)
 
     # Mengarahkan kembali ke halaman utama
     return redirect(url_for("index"))
