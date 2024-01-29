@@ -42,21 +42,6 @@ else:
     print("Failed to connect to MySQL database.")
 
 
-def remove_symbols_and_numbers(text):
-    cleaned_text = re.sub(r"[^a-zA-Z\s]", "", text)
-    return cleaned_text
-
-
-def stopwords_removal(words, stopwords):
-    return [word for word in words if word.lower() not in stopwords]
-
-
-def apply_stemming(words):
-    factory = StemmerFactory()
-    stemmer = factory.create_stemmer()
-    stemmed_words = [stemmer.stem(word) for word in words]
-    return " ".join(stemmed_words)
-
 @app.route("/")
 def index():
     # Clear variables
@@ -67,7 +52,7 @@ def index():
     filtered_data = []
     selected_cluster = None
 
-    # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
+
     # Ambil data dari tabel 'daftar_cluster' dan urutkan berdasarkan cluster_label
     cursor = mydb.cursor()
     try:
@@ -121,6 +106,21 @@ def index():
         message=request.args.get("message"),
     )
 
+#Fungsi Hapus simbol dan angka pada preprocessing
+def remove_symbols_and_numbers(text):
+    cleaned_text = re.sub(r"[^a-zA-Z\s]", "", text)
+    return cleaned_text
+
+#Fungsi Hapus stopword
+def stopwords_removal(words, stopwords):
+    return [word for word in words if word.lower() not in stopwords]
+
+#Fungsi stemming menggunakan sastrawi
+def apply_stemming(words):
+    factory = StemmerFactory()
+    stemmer = factory.create_stemmer()
+    stemmed_words = [stemmer.stem(word) for word in words]
+    return " ".join(stemmed_words)
 
 @app.route("/clustering", methods=["POST", "GET"])
 def clustering():
