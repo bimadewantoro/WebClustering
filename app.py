@@ -6,6 +6,7 @@ import re
 from nltk.tokenize import word_tokenize
 import nltk
 import json
+import os
 
 #nltk.download("punkt")
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
@@ -17,7 +18,6 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 from itertools import groupby
 from sklearn.metrics import pairwise_distances
-import os
 
 load_dotenv()
 app = Flask(__name__)
@@ -56,16 +56,6 @@ def apply_stemming(words):
     stemmer = factory.create_stemmer()
     stemmed_words = [stemmer.stem(word) for word in words]
     return " ".join(stemmed_words)
-
-import pickle
-import os
-import nltk.data
-# Provide the path to your tokenizer file
-# Tentukan direktori di mana Anda menyimpan file pickle
-malayalam_punkt_path = "nltk_data/tokenizers/punkt/malayalam.pickle"
-
-# Muat model tokenizer Malayalam
-nltk.data.load(malayalam_punkt_path)
 
 @app.route("/")
 def index():
@@ -301,7 +291,7 @@ def clustering():
 def dataskripsi():
     cursor = mydb.cursor()
     cursor.execute(
-        "SELECT id, nama_peneliti, tahun, program_studi FROM daftar_skripsi"
+        "SELECT id, judul_skripsi,nama_peneliti, tahun, program_studi FROM daftar_skripsi"
     )  # Ambil data dari tabel 'daftar_skripsi'
     data = cursor.fetchall()  # Ambil hasil query
     cursor.close()
