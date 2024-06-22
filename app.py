@@ -18,20 +18,24 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 from itertools import groupby
 from sklearn.metrics import pairwise_distances
+from collections import defaultdict, Counter
 
 load_dotenv()
 app = Flask(__name__)
 
 # Koneksi ke database MySQL
+# Koneksi ke database MySQL
 try:
     mydb = mysql.connector.connect(
         host=os.getenv("DATABASE_HOST"),
-        port=int(os.getenv("DATABASE_PORT",3306)),
+        port=int(os.getenv("DATABASE_PORT", 3307)),
         user=os.getenv("DATABASE_USER"),
         password=os.getenv("DATABASE_PASSWORD"),
         database=os.getenv("DATABASE_NAME"),
         autocommit=True,
     )
+    if mydb.is_connected():
+        print("Connected to MySQL database successfully.")
 except mysql.connector.Error as err:
     print(f"Error: {err}")
     mydb = None
@@ -40,6 +44,7 @@ if mydb:
     print("Connected to MySQL database successfully.")
 else:
     print("Failed to connect to MySQL database.")
+
 
 
 @app.route("/")
@@ -133,6 +138,7 @@ def clustering():
     cursor.execute("SELECT stopwords FROM stopwords")
     data_stopwords = cursor.fetchall()
     df_stopwords = pd.DataFrame(data_stopwords, columns=["stopwords"])
+    stopwords_list = df_stopwords['stopwords'].tolist()
 
     cursor.close()
 
@@ -160,7 +166,7 @@ def clustering():
         lambda x: [word.lower() for word in x]
     )
     df["judul_no_stopwords"] = df["judul_lower"].apply(
-        lambda x: stopwords_removal(x, df_stopwords)
+        lambda x: stopwords_removal(x, stopwords_list)
     )
     df["judul_stemmed"] = df["judul_no_stopwords"].apply(apply_stemming)
 
@@ -446,6 +452,33 @@ def hapus_stopwords(stopwords_id):
         return redirect(
             url_for("stopwords")
         )  # Redirect ke halaman yang menampilkan stopwords setelah dihapus
+
+@app.route("/catatanjudulskripsi")
+def catatanjudulskripsi():
+    cursor = mydb.cursor()
+    cursor.execute("SELECT cluster_label, judul_no_stopwords FROM daftar_cluster")
+    data = cursor.fetchall()
+    cursor.close()
+    
+    # Menghitung frekuensi kata per cluster
+    cluster_word_counts = defaultdict(Counter)
+    for cluster_label, judul_no_stopwords in data:
+        words = judul_no_stopwords.replace(',', '').split()  # Menghapus koma dan memisahkan kata
+        cluster_word_counts[cluster_label].update(words)
+    
+    # Mengurutkan kata berdasarkan frekuensi per cluster dan memfilter kata dengan frekuensi di atas 10
+    ranked_words_per_cluster = {
+        cluster: [(word, count) for word, count in word_counts.items() if count > 10]
+        for cluster, word_counts in cluster_word_counts.items()
+    }
+    
+    # Mengurutkan cluster berdasarkan label
+    sorted_clusters = sorted(ranked_words_per_cluster.items())
+    
+    return render_template(
+        "catatanjudulskripsi.php",
+        ranked_words_per_cluster=sorted_clusters
+    )
 
 
 if __name__ == "__main__":

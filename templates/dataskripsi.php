@@ -50,6 +50,7 @@
               <a class="btn btn-outline-primary rounded-5" href="/get_skripsi/{{ row[0] }}">Edit</a>
               <button class="btn btn-outline-danger" onclick="hapusSkripsi({{ row[0] }})">Hapus</button>
             </td>
+            </td>
           </tr>
           {% endfor %}
         </tbody>

@@ -21,6 +21,9 @@
               <li class="nav-item mx-2">
                 <a class="nav-link" href="{{ url_for('stopwords') }}">Stopwords</a>
               </li>
+              <li class="nav-item mx-2">
+                <a class="nav-link" href="{{ url_for('catatanjudulskripsi') }}">Catatan Judul Skripsi</a>
+              </li>
             </ul>
           </div>
         </div>
